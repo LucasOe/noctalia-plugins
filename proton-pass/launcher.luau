@@ -20,21 +20,23 @@ function onQuery(text: string)
     end
 
     if #args <= 1 then
-        local vaultName: string? = args[1]
+        local vaultName = args[1] or ""
         launcher.setResults(text, { { id = "loading", title = "Loading Vaults…", glyph = "loader" } })
 
         getVaultsAsync(function(vaults)
-            vaults = fuzzyFilter(vaults, vaultName, function(it)
-                return it.name
-            end)
-
             launcher.setResults(
                 text,
                 map(vaults, function(vault)
+                    local score = launcher.fuzzyScore(vaultName, vault.name)
+                    if score == nil then
+                        return {}
+                    end
+
                     return {
                         id = noctalia.json.encode({ type = "vault", id = vault.name }),
                         title = vault.name,
                         glyph = "folder",
+                        score = score,
                     }
                 end)
             )
@@ -44,8 +46,8 @@ function onQuery(text: string)
     -- If the user provided a second argument OR typed a space after the vault name
     -- (i.e. an empty second argument), show items for the selected vault.
     if #args >= 2 or (#args == 1 and hasTrailingSpace) then
-        local vaultName: string = args[1]
-        local itemName: string? = table.concat(args, " ", 2)
+        local vaultName = args[1]
+        local itemName = table.concat(args, " ", 2) or ""
         launcher.setResults(text, { { id = "loading", title = "Loading Items…", glyph = "loader" } })
 
         getItemsAsync(vaultName, function(items)
@@ -53,18 +55,20 @@ function onQuery(text: string)
                 return item.state == "Active"
             end)
 
-            items = fuzzyFilter(items, itemName, function(it)
-                return it.title
-            end)
-
             launcher.setResults(
                 text,
                 map(items, function(item)
+                    local score = launcher.fuzzyScore(itemName, item.title)
+                    if score == nil then
+                        return {}
+                    end
+
                     return {
                         id = noctalia.json.encode({ type = "item", id = item.id }),
                         title = item.title,
                         subtitle = item.item_type,
                         glyph = "lock",
+                        score = score,
                     }
                 end)
             )
@@ -177,69 +181,6 @@ function searchCachedItems(item_id: string): Item?
         end
     end
     return nil
-end
-
-function fuzzyScore(pattern, text)
-    if pattern == nil or pattern == "" or text == nil then
-        return nil
-    end
-
-    local p = string.lower(pattern)
-    local t = string.lower(text)
-    local pLen = #p
-    local tLen = #t
-    local pIdx = 1
-    local tIdx = 1
-    local score = 0
-    local consecutive = 0
-    local firstPos = nil
-
-    while pIdx <= pLen and tIdx <= tLen do
-        if string.sub(p, pIdx, pIdx) == string.sub(t, tIdx, tIdx) then
-            if firstPos == nil then
-                firstPos = tIdx
-            end
-            score = score + 10 + consecutive * 5
-            consecutive = consecutive + 1
-            pIdx = pIdx + 1
-        else
-            consecutive = 0
-            score = score - 1
-        end
-        tIdx = tIdx + 1
-    end
-
-    if pIdx <= pLen then
-        return nil
-    end
-
-    score = score + math.max(0, 10 - (firstPos or 0))
-    return score
-end
-
-function fuzzyFilter(list, pattern, extractor)
-    if pattern == nil or pattern == "" then
-        return list
-    end
-
-    local scored = {}
-    for _, v in ipairs(list) do
-        local text = extractor(v) or ""
-        local s = fuzzyScore(pattern, text)
-        if s ~= nil then
-            table.insert(scored, { item = v, score = s })
-        end
-    end
-
-    table.sort(scored, function(a, b)
-        return a.score > b.score
-    end)
-
-    local out = {}
-    for _, entry in ipairs(scored) do
-        table.insert(out, entry.item)
-    end
-    return out
 end
 
 function filter(sequence, predicate)
