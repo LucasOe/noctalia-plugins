@@ -26,11 +26,9 @@ function onQuery(text: string)
         getVaultsAsync(function(vaults)
             launcher.setResults(
                 text,
-                map(vaults, function(vault)
+                mapFilter(vaults, function(vault)
                     local score = launcher.fuzzyScore(vaultName, vault.name)
-                    if score == nil then
-                        return {}
-                    end
+                    if score == nil then return nil end
 
                     return {
                         id = noctalia.json.encode({ type = "vault", id = vault.name }),
@@ -57,11 +55,9 @@ function onQuery(text: string)
 
             launcher.setResults(
                 text,
-                map(items, function(item)
+                mapFilter(items, function(item)
                     local score = launcher.fuzzyScore(itemName, item.title)
-                    if score == nil then
-                        return {}
-                    end
+                    if score == nil then return nil end
 
                     return {
                         id = noctalia.json.encode({ type = "item", id = item.id }),
@@ -99,18 +95,12 @@ function onActivate(_id: string)
 end
 
 function getVaultsAsync(callback)
-    if #cachedVaults ~= 0 then
-        return callback(cachedVaults)
-    end
+    if #cachedVaults ~= 0 then return callback(cachedVaults) end
 
     noctalia.runAsync(`pass-cli vault list --output=json`, function(result)
-        if result.exitCode ~= 0 then
-            return
-        end
-
+        if result.exitCode ~= 0 then return end
         local vaults: Vaults = noctalia.json.decode(result.stdout)["vaults"]
         cachedVaults = vaults
-
         return callback(vaults)
     end)
 
@@ -118,18 +108,12 @@ function getVaultsAsync(callback)
 end
 
 function getItemsAsync(vaultName, callback)
-    if cachedItems[vaultName] ~= nil then
-        return callback(cachedItems[vaultName])
-    end
+    if cachedItems[vaultName] ~= nil then return callback(cachedItems[vaultName]) end
 
     noctalia.runAsync(`pass-cli item list {vaultName} --output=json`, function(result)
-        if result.exitCode ~= 0 then
-            return
-        end
-
+        if result.exitCode ~= 0 then return end
         local items: Items = noctalia.json.decode(result.stdout)["items"]
         cachedItems[vaultName] = items
-
         return callback(items)
     end)
 
@@ -138,12 +122,8 @@ end
 
 function getPasswordAsync(item, callback)
     noctalia.runAsync(`pass-cli item view "pass://{item.share_id}/{item.id}/password" --output=json`, function(result)
-        if result.exitCode ~= 0 then
-            return
-        end
-
+        if result.exitCode ~= 0 then return end
         local password: string = result.stdout
-
         return callback(password)
     end)
 
@@ -152,9 +132,7 @@ end
 
 function getItemTotpAsync(item, callback)
     noctalia.runAsync(`pass-cli item totp "pass://{item.share_id}/{item.id}" --output=json`, function(result)
-        if result.exitCode ~= 0 then
-            return
-        end
+        if result.exitCode ~= 0 then return end
 
         local totp: string = noctalia.json.decode(result.stdout)["totp"]
 
@@ -175,9 +153,7 @@ end
 function searchCachedItems(item_id: string): Item?
     for _, vault in pairs(cachedItems) do
         for _, item in ipairs(vault) do
-            if item.id == item_id then
-                return item
-            end
+            if item.id == item_id then return item end
         end
     end
     return nil
@@ -186,19 +162,18 @@ end
 function filter(sequence, predicate)
     local newlist = {}
     for _, v in ipairs(sequence) do
-        if predicate(v) then
-            table.insert(newlist, v)
-        end
+        if predicate(v) then table.insert(newlist, v) end
     end
     return newlist
 end
 
-function map(sequence, transformation)
-    local mapped = {}
-    for i, v in pairs(sequence) do
-        mapped[i] = transformation(v)
+function mapFilter(sequence, fn)
+    local out = {}
+    for _, v in ipairs(sequence) do
+        local res = fn(v)
+        if res ~= nil then table.insert(out, res) end
     end
-    return mapped
+    return out
 end
 
 function log(obj)
