@@ -1,0 +1,13 @@
+{
+	"lint": {
+		"*": true,
+		"FunctionUnused": false,
+	},
+	"globals": [
+		"barWidget",
+		"desktopWidget",
+		"launcher",
+		"noctalia",
+		"shortcut",
+	]
+}
