@@ -1,0 +1,10 @@
+[[plugin]]
+id = "lucasoe/proton-pass"
+name = "Proton Pass"
+version = "0.1.0"
+min_noctalia = "5.0.0"
+author = "LucasOe"
+license = "MIT"
+tags = ["proton", "pass", "pass-cli", "password", "launcher"]
+icon = "lock"
+description = "Proton Pass CLI launcher integration."
