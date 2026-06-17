@@ -1,28 +1,40 @@
-local cachedVaults = nil
-local cachedItems = {}
+-- type used by `launcher.setResults(text, <LauncherResult>)`
+type LauncherResult = { id: string, title: string?, subtitle: string?, glyph: string? }
 
-function onQuery(text)
-    local args = splitByWhitespace(text)
-    local hasTrailingSpace = text:match("%s$") ~= nil
+-- type returned by `pass-cli vault list --output=json`
+type Vault = { name: string, vault_id: string, share_id: string }
+type Vaults = { [number]: Vault }
+
+-- type returned by `pass-cli item list <vault_name> --output=json`
+type Item = { id: string, share_id: string, vault_id: string, state: string, title: string, item_type: string }
+type Items = { [number]: Item }
+
+local cachedVaults: Vaults = {}
+local cachedItems: { [string]: Items } = {}
+
+function onQuery(text: string)
+    local args: { string } = splitByWhitespace(text)
+    local hasTrailingSpace: boolean = text:match("%s$") ~= nil
 
     -- reset cache
     if text == "" then
-        cachedVaults = nil
+        cachedVaults = {}
         cachedItems = {}
     end
 
     if #args <= 1 then
-        local vaultName = args[1] -- can be nil
+        local vaultName: string? = args[1]
         launcher.setResults(text, { { id = "loading", title = "Loading Vaults…", glyph = "loader" } })
 
         getVaultsAsync(function(vaults)
+            -- fuzzy filter
             vaults = fuzzyFilter(vaults, vaultName, function(it)
                 return it.name
-            end) -- fuzzy filter
+            end)
 
             launcher.setResults(
                 text,
-                map(vaults, function(vault)
+                map(vaults, function(vault): LauncherResult
                     return {
                         id = noctalia.json.encode({ type = "vault", id = vault.name }),
                         title = vault.name,
@@ -36,21 +48,24 @@ function onQuery(text)
     -- If the user provided a second argument OR typed a space after the vault name
     -- (i.e. an empty second argument), show items for the selected vault.
     if #args >= 2 or (#args == 1 and hasTrailingSpace) then
-        local vaultName = args[1]
-        local itemName = table.concat(args, " ", 2)
+        local vaultName: string = args[1]
+        local itemName: string? = table.concat(args, " ", 2)
         launcher.setResults(text, { { id = "loading", title = "Loading Items…", glyph = "loader" } })
 
         getItemsAsync(vaultName, function(items)
+            -- filter out Trashed items
             items = filter(items, function(item)
                 return item.state == "Active"
-            end) -- filter out Trashed items
+            end)
+
+            -- fuzzy filter
             items = fuzzyFilter(items, itemName, function(it)
                 return it.title
-            end) -- fuzzy filter
+            end)
 
             launcher.setResults(
                 text,
-                map(items, function(item)
+                map(items, function(item): LauncherResult
                     return {
                         id = noctalia.json.encode({ type = "item", id = item.id }),
                         title = item.title,
@@ -63,43 +78,39 @@ function onQuery(text)
     end
 end
 
-function onActivate(id)
-    id = noctalia.json.decode(id)
+function onActivate(_id: string)
+    local id: { type: string, id: string } = noctalia.json.decode(_id)
 
     if id.type == "vault" then
         -- TODO: replace IPC call with plugin API once available
-        noctalia.runAsync(string.format('noctalia msg panel-toggle launcher "/pass %s "', id.id))
+        noctalia.runAsync(`noctalia msg panel-toggle launcher "/pass {id.id} "`)
     end
 
     if id.type == "item" then
-        local item = searchCachedItems(cachedItems, id.id)
-        if item == nil then
-            return
-        end
+        local item = searchCachedItems(id.id)
 
         getPasswordAsync(item, function(password)
             noctalia.copyToClipboard(password, "text/plain")
-            noctalia.notify("Proton Pass", string.format("Copied to %s clipboard", item.title))
+            noctalia.notify("Proton Pass", `Copied to {item.title} clipboard`)
 
             getItemTotpAsync(item, function(totp)
-                noctalia.notify(string.format("%s TOTP", item.title), totp)
+                noctalia.notify(`{item.title} TOTP`, totp)
             end)
         end)
     end
 end
 
 function getVaultsAsync(callback)
-    if cachedVaults ~= nil then
+    if #cachedVaults ~= 0 then
         return callback(cachedVaults)
     end
 
-    local cmd = "pass-cli vault list --output=json"
-    noctalia.runAsync(cmd, function(result)
+    noctalia.runAsync(`pass-cli vault list --output=json`, function(result)
         if result.exitCode ~= 0 then
             return
         end
 
-        local vaults = noctalia.json.decode(result.stdout)["vaults"]
+        local vaults: Vaults = noctalia.json.decode(result.stdout)["vaults"]
         cachedVaults = vaults
 
         return callback(vaults)
@@ -113,13 +124,12 @@ function getItemsAsync(vaultName, callback)
         return callback(cachedItems[vaultName])
     end
 
-    local cmd = string.format("pass-cli item list %s --output=json", vaultName)
-    noctalia.runAsync(cmd, function(result)
+    noctalia.runAsync(`pass-cli item list {vaultName} --output=json`, function(result)
         if result.exitCode ~= 0 then
             return
         end
 
-        local items = noctalia.json.decode(result.stdout)["items"]
+        local items: Items = noctalia.json.decode(result.stdout)["items"]
         cachedItems[vaultName] = items
 
         return callback(items)
@@ -129,26 +139,26 @@ function getItemsAsync(vaultName, callback)
 end
 
 function getPasswordAsync(item, callback)
-    local cmd = string.format('pass-cli item view "pass://%s/%s/password" --output=json', item.share_id, item.id)
-    noctalia.runAsync(cmd, function(result)
+    noctalia.runAsync(`pass-cli item view "pass://{item.share_id}/{item.id}/password" --output=json`, function(result)
         if result.exitCode ~= 0 then
             return
         end
 
-        return callback(result.stdout)
+        local password: string = result.stdout
+
+        return callback(password)
     end)
 
     return
 end
 
 function getItemTotpAsync(item, callback)
-    local cmd = string.format('pass-cli item totp "pass://%s/%s" --output=json', item.share_id, item.id)
-    noctalia.runAsync(cmd, function(result)
+    noctalia.runAsync(`pass-cli item totp "pass://{item.share_id}/{item.id}" --output=json`, function(result)
         if result.exitCode ~= 0 then
             return
         end
 
-        local totp = noctalia.json.decode(result.stdout)["totp"]
+        local totp: string = noctalia.json.decode(result.stdout)["totp"]
 
         return callback(totp)
     end)
@@ -156,7 +166,7 @@ function getItemTotpAsync(item, callback)
     return
 end
 
-function splitByWhitespace(str)
+function splitByWhitespace(str: string): { string }
     local words = {}
     for word in str:gmatch("%S+") do
         table.insert(words, word)
@@ -164,21 +174,17 @@ function splitByWhitespace(str)
     return words
 end
 
-function searchCachedItems(items, itemId)
-    for _, itemList in pairs(items) do
-        if type(itemList) == "table" then
-            for _, item in ipairs(itemList) do
-                if item.id == itemId then
-                    return item
-                end
+function searchCachedItems(item_id: string): Item?
+    for _, vault in pairs(cachedItems) do
+        for _, item in ipairs(vault) do
+            if item.id == item_id then
+                return item
             end
         end
     end
-
     return nil
 end
 
--- Fuzzy matching helpers
 function fuzzyScore(pattern, text)
     if pattern == nil or pattern == "" or text == nil then
         return nil
@@ -258,4 +264,8 @@ function map(sequence, transformation)
         mapped[i] = transformation(v)
     end
     return mapped
+end
+
+function log(obj)
+    noctalia.log(noctalia.json.encode(obj))
 end
