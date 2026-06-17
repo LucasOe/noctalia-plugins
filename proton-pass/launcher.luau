@@ -1,6 +1,3 @@
--- type used by `launcher.setResults(text, <LauncherResult>)`
-type LauncherResult = { id: string, title: string?, subtitle: string?, glyph: string? }
-
 -- type returned by `pass-cli vault list --output=json`
 type Vault = { name: string, vault_id: string, share_id: string }
 type Vaults = { [number]: Vault }
@@ -27,14 +24,13 @@ function onQuery(text: string)
         launcher.setResults(text, { { id = "loading", title = "Loading Vaults…", glyph = "loader" } })
 
         getVaultsAsync(function(vaults)
-            -- fuzzy filter
             vaults = fuzzyFilter(vaults, vaultName, function(it)
                 return it.name
             end)
 
             launcher.setResults(
                 text,
-                map(vaults, function(vault): LauncherResult
+                map(vaults, function(vault)
                     return {
                         id = noctalia.json.encode({ type = "vault", id = vault.name }),
                         title = vault.name,
@@ -53,19 +49,17 @@ function onQuery(text: string)
         launcher.setResults(text, { { id = "loading", title = "Loading Items…", glyph = "loader" } })
 
         getItemsAsync(vaultName, function(items)
-            -- filter out Trashed items
             items = filter(items, function(item)
                 return item.state == "Active"
             end)
 
-            -- fuzzy filter
             items = fuzzyFilter(items, itemName, function(it)
                 return it.title
             end)
 
             launcher.setResults(
                 text,
-                map(items, function(item): LauncherResult
+                map(items, function(item)
                     return {
                         id = noctalia.json.encode({ type = "item", id = item.id }),
                         title = item.title,
@@ -91,7 +85,7 @@ function onActivate(_id: string)
 
         getPasswordAsync(item, function(password)
             noctalia.copyToClipboard(password, "text/plain")
-            noctalia.notify("Proton Pass", `Copied to {item.title} clipboard`)
+            noctalia.notify("Proton Pass", `Copied {item.title} password clipboard`)
 
             getItemTotpAsync(item, function(totp)
                 noctalia.notify(`{item.title} TOTP`, totp)
