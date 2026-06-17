@@ -30,9 +30,7 @@ function onQuery(text: string)
                 text,
                 mapFilter(vaults, function(vault)
                     local score = launcher.fuzzyScore(vaultName, vault.name)
-                    if score == nil then
-                        return nil -- filtered out by mapFilter
-                    end
+                    if score == nil then return nil end
 
                     return {
                         id = noctalia.json.encode({ type = "vault", id = vault.name }),
