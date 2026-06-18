@@ -66,7 +66,7 @@ function onQuery(text: string)
                         id = noctalia.json.encode({ type = "item", id = item.id }),
                         title = item.title,
                         subtitle = item.item_type,
-                        glyph = "lock",
+                        glyph = glpyhTable(item.item_type),
                         score = score,
                     }
                 end)
@@ -102,6 +102,20 @@ function onActivate(_id: string)
             end)
         end)
     end
+end
+
+function glpyhTable(item_type: string)
+    local lookupTable: { [string]: string } = {
+        alias = "at",
+        credit_card = "credit-card",
+        custom = "note",
+        identity = "user-circle",
+        login = "lock",
+        ssh_key = "key",
+        wifi = "router",
+    }
+
+    return lookupTable[item_type] or "question-mark"
 end
 
 -- Async helpers ---------------------------------------------------------------
