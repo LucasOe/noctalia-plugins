@@ -65,7 +65,7 @@ function onQuery(text: string)
                     return {
                         id = noctalia.json.encode({ type = "item", id = item.id }),
                         title = item.title,
-                        subtitle = item.item_type,
+                        -- subtitle = item.item_type,
                         glyph = glpyhTable(item.item_type),
                         score = score,
                     }
@@ -94,11 +94,11 @@ function onActivate(_id: string)
 
         getPasswordAsync(item, function(password)
             noctalia.copyToClipboard(password, "text/plain")
-            noctalia.notify(`Proton Pass: {item.title}`, `Copied password to clipboard`)
+            noctalia.notify(`{item.title}`, `Copied password to clipboard`)
 
             -- Try to fetch TOTP and notify
             getItemTotpAsync(item, function(totp)
-                noctalia.notify(`Proton Pass: {item.title} TOTP`, totp)
+                noctalia.notify(`{item.title} TOTP`, totp)
             end)
         end)
     end
