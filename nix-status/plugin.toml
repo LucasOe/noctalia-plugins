@@ -1,0 +1,19 @@
+id = "lucasoe/nix-status"
+name = "Nix Status"
+version = "0.1.0"
+min_noctalia = "5.0.0"
+author = "LucasOe"
+license = "MIT"
+icon = "lock"
+description = "Widget showing nixpkgs status."
+
+[[widget]]
+id = "nix-status"
+entry = "widget.luau"
+
+	[[widget.setting]]
+	key = "hide"
+	type = "boolean"
+	label_key = "settings.hide.label"
+	description_key = "settings.hide.description"
+	default = false

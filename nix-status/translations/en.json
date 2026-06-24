@@ -1,0 +1,8 @@
+{
+  "settings": {
+    "hide": {
+      "label": "Hide When up-to-date",
+      "description": "Hide the widget when nixpkgs is up-to-date"
+    }
+  }
+}

@@ -9,3 +9,13 @@ icon = "lock"
 description = "Proton Pass CLI launcher integration."
 tags = ["proton", "pass", "pass-cli", "password", "launcher"]
 dependencies = ["proton-pass-cli"]
+
+[[plugin]]
+id = "lucasoe/nix-status"
+name = "Nix Status"
+version = "0.1.0"
+min_noctalia = "5.0.0"
+author = "LucasOe"
+license = "MIT"
+icon = "lock"
+description = "Widget showing nixpkgs status."
