@@ -30,7 +30,7 @@ function onQuery(text: string)
         getVaultsAsync(function(vaults)
             launcher.setResults(
                 text,
-                mapFilter(vaults, function(vault)
+                filterMap(vaults, function(vault)
                     local score = noctalia.fuzzyScore(vaultName, vault.name)
                     if score == nil then return nil end
 
@@ -53,14 +53,12 @@ function onQuery(text: string)
         launcher.setResults(text, { { id = "loading", title = "Loading Items…", glyph = "loader" } })
 
         getItemsAsync(vaultName, function(items)
-            -- Exclude Trashed items before scoring
-            items = filter(items, function(item)
-                return item.state == "Active"
-            end)
-
             launcher.setResults(
                 text,
-                mapFilter(items, function(item)
+                filterMap(items, function(item)
+                    -- Exclude Trashed items before scoring
+                    if item.state ~= "Active" then return nil end
+
                     local score = noctalia.fuzzyScore(itemName, item.title)
                     if score == nil then return nil end
 
@@ -204,26 +202,8 @@ function searchCachedItems(item_id: string): Item?
     return nil
 end
 
--- Filter a sequence keeping only elements where predicate(v) is truthy
-function filter(sequence, predicate)
-    local newlist = {}
-    for _, v in ipairs(sequence) do
-        if predicate(v) then table.insert(newlist, v) end
-    end
-    return newlist
-end
-
--- Map a sequence to a new sequence (keeps order, produces a dense array)
-function map(sequence, transformation)
-    local mapped = {}
-    for _, v in ipairs(sequence) do
-        table.insert(mapped, transformation(v))
-    end
-    return mapped
-end
-
 -- Map + filter: transform each element, include only non-nil results
-function mapFilter(sequence, fn)
+function filterMap(sequence, fn)
     local out = {}
     for _, v in ipairs(sequence) do
         local res = fn(v)
