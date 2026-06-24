@@ -14,6 +14,10 @@ local cachedItems: { [string]: Items } = {}
 
 -- Utility functions -----------------------------------------------------------
 
+local function log(obj)
+    noctalia.log(noctalia.json.encode(obj))
+end
+
 -- Search cached items by item id across all cached vaults
 local function searchCachedItems(item_id: string): Item?
     for _, vault in cachedItems do
@@ -46,10 +50,6 @@ local function glpyhTable(item_type: string)
     }
 
     return lookupTable[item_type] or "question-mark"
-end
-
-local function log(obj)
-    noctalia.log(noctalia.json.encode(obj))
 end
 
 -- Proton Pass CLI functions ---------------------------------------------------
