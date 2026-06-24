@@ -6,6 +6,8 @@ type Vaults = { [number]: Vault }
 type Item = { id: string, share_id: string, vault_id: string, state: string, title: string, item_type: string }
 type Items = { [number]: Item }
 
+local PREFIX = "/pass"
+
 -- Caches to avoid repeated CLI calls while the launcher session is active
 local cachedVaults: Vaults = {}
 local cachedItems: { [string]: Items } = {}
@@ -29,7 +31,7 @@ function onQuery(text: string)
             launcher.setResults(
                 text,
                 mapFilter(vaults, function(vault)
-                    local score = launcher.fuzzyScore(vaultName, vault.name)
+                    local score = noctalia.fuzzyScore(vaultName, vault.name)
                     if score == nil then return nil end
 
                     return {
@@ -59,13 +61,12 @@ function onQuery(text: string)
             launcher.setResults(
                 text,
                 mapFilter(items, function(item)
-                    local score = launcher.fuzzyScore(itemName, item.title)
+                    local score = noctalia.fuzzyScore(itemName, item.title)
                     if score == nil then return nil end
 
                     return {
                         id = noctalia.json.encode({ type = "item", id = item.id }),
                         title = item.title,
-                        -- subtitle = item.item_type,
                         glyph = glpyhTable(item.item_type),
                         score = score,
                     }
@@ -79,8 +80,7 @@ function onActivate(_id: string)
     local id: { type: string, id: string } = noctalia.json.decode(_id)
 
     if id.type == "vault" then
-        -- TODO: replace IPC call with plugin API once available
-        noctalia.runAsync(`noctalia msg panel-toggle launcher "/pass {id.id} "`)
+        launcher.setQuery(`{PREFIX} {id.id} `)
         return
     end
 
