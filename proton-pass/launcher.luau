@@ -16,8 +16,8 @@ local cachedItems: { [string]: Items } = {}
 
 -- Search cached items by item id across all cached vaults
 local function searchCachedItems(item_id: string): Item?
-    for _, vault in pairs(cachedItems) do
-        for _, item in ipairs(vault) do
+    for _, vault in cachedItems do
+        for _, item in vault do
             if item.id == item_id then return item end
         end
     end
@@ -25,9 +25,9 @@ local function searchCachedItems(item_id: string): Item?
 end
 
 -- Map + filter: transform each element, include only non-nil results
-local function filterMap(sequence, fn)
+local function filterMap<T, U>(sequence: { T }, fn: (T) -> U?)
     local out = {}
-    for _, v in ipairs(sequence) do
+    for _, v in sequence do
         local res = fn(v)
         if res ~= nil then table.insert(out, res) end
     end
