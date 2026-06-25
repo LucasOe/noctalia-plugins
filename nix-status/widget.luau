@@ -18,7 +18,7 @@ local function render(localRevision: string, remoteRevision: string)
         barWidget.setText(localRevision)
         barWidget.setColor("tertiary")
 
-        -- if barWidget.getConfig("hide") then barWidget.setVisible(false) end
+        if barWidget.getConfig("hide") then barWidget.setVisible(false) end
     else
         barWidget.setGlyph("alert-circle")
         barWidget.setGlyphColor("error")
