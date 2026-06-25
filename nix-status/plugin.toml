@@ -14,6 +14,6 @@ entry = "widget.luau"
 	[[widget.setting]]
 	key = "hide"
 	type = "boolean"
-	label_key = "settings.hide.label"
-	description_key = "settings.hide.description"
+	label = "Hide When up-to-date"
+	description = "Hide the widget when nixpkgs is up-to-date"
 	default = false
