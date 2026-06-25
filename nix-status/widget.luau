@@ -24,6 +24,8 @@ local function render(localRevision: string, remoteRevision: string)
         barWidget.setGlyphColor("error")
         barWidget.setText(`{localRevision} → {remoteRevision}`)
         barWidget.setColor("error")
+
+        barWidget.setVisible(true)
     end
 end
 
@@ -32,6 +34,7 @@ function update()
 
     if firstRun then
         firstRun = false
+        if barWidget.getConfig("hide") then barWidget.setVisible(false) end
         barWidget.setGlyph("loader")
         barWidget.setText("-------")
     end
