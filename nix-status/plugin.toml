@@ -4,8 +4,9 @@ version = "0.1.0"
 min_noctalia = "5.0.0"
 author = "LucasOe"
 license = "MIT"
-icon = "lock"
+icon = "snowflake"
 description = "Widget showing nixpkgs status."
+tags = ["nixos", "nix", "bar", "widget"]
 
 [[widget]]
 id = "nix-status"
