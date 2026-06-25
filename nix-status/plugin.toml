@@ -18,3 +18,26 @@ entry = "widget.luau"
 	label = "Hide When up-to-date"
 	description = "Hide the widget when nixpkgs is up-to-date"
 	default = false
+
+	[[widget.setting]]
+	key = "updateInterval"
+	type = "int"
+	label = "Update Interval"
+	description = "Update interval in seconds"
+	default = 300
+	min = 60
+	max = 3600
+
+	[[widget.setting]]
+	key = "localRevisionCommand"
+	type = "string"
+	label = "Local Revision command"
+	description = "Command to get local nixpkgs revision"
+	default = "nixos-version --hash | cut -c 1-7"
+
+	[[widget.setting]]
+	key = "remoteRevisionCommand"
+	type = "string"
+	label = "Remote Revision command"
+	description = "Command to get remote nixpkgs revision\nFor faster update checks, use curl with GitHub's API:\ncurl -s https://api.github.com/repos/NixOS/nixpkgs/git/ref/heads/nixos-unstable | jq -r '.object.sha' | cut -c 1-7"
+	default = "git ls-remote https://github.com/NixOS/nixpkgs.git nixos-unstable | cut -c 1-7"
